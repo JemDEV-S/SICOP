@@ -1,0 +1,276 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ====================== DESIGN TOKENS ====================== */
+:root {
+  --bg:           #0b0d12;
+  --bg-elev:      #11141c;
+  --bg-elev-2:    #161a24;
+  --panel:        #13171f;
+  --border:       #1f2530;
+  --border-strong:#2b3340;
+  --hover:        #1a1f2b;
+
+  --fg:           #e7eaf0;
+  --fg-muted:     #8a93a6;
+  --fg-dim:       #5d6678;
+
+  --accent:       #5b8def;
+  --accent-soft:  rgba(91,141,239,0.12);
+  --accent-strong:#7ba3ff;
+
+  --ok:           #2ec27e;
+  --ok-soft:      rgba(46,194,126,0.14);
+  --warn:         #e6a23c;
+  --warn-soft:    rgba(230,162,60,0.14);
+  --danger:       #e85b5b;
+  --danger-soft:  rgba(232,91,91,0.14);
+
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.35);
+}
+
+[data-theme="light"] {
+  --bg:           #f6f7fa;
+  --bg-elev:      #ffffff;
+  --bg-elev-2:    #ffffff;
+  --panel:        #ffffff;
+  --border:       #e3e6ee;
+  --border-strong:#ced3df;
+  --hover:        #f0f3f8;
+
+  --fg:           #181b22;
+  --fg-muted:     #5d6578;
+  --fg-dim:       #8a93a6;
+
+  --accent:       #2b62d4;
+  --accent-soft:  rgba(43,98,212,0.10);
+  --accent-strong:#1a4cba;
+
+  --ok:           #138a4d;
+  --ok-soft:      rgba(19,138,77,0.10);
+  --warn:         #b4761d;
+  --warn-soft:    rgba(180,118,29,0.12);
+  --danger:       #c5333a;
+  --danger-soft:  rgba(197,51,58,0.10);
+
+  --shadow-sm: 0 1px 2px rgba(20,24,34,0.06);
+  --shadow-md: 0 4px 12px rgba(20,24,34,0.08);
+}
+
+/* ====================== BASE ====================== */
+* { box-sizing: border-box; }
+
+html {
+  min-height: 100%;
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+[data-theme="light"] { color-scheme: light; }
+
+body {
+  min-height: 100%;
+  margin: 0;
+  color: var(--fg);
+  background: var(--bg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ====================== INPUTS ====================== */
+.sicop-input {
+  height: 34px;
+  width: 100%;
+  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elev-2);
+  color: var(--fg);
+  padding: 0 10px;
+  font-size: 12.5px;
+  outline: none;
+  font-family: var(--font-sans);
+}
+.sicop-input:focus { border-color: var(--accent); }
+
+/* ====================== TABLE ====================== */
+.sicop-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.sicop-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-elev);
+  color: var(--fg-muted);
+  padding: 9px 10px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.sicop-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+/* Celda de texto largo: permite salto de línea, se ancla arriba */
+.sicop-table td.sicop-cell-text {
+  white-space: normal;
+  word-break: break-word;
+  vertical-align: top;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  line-height: 1.45;
+  min-width: 180px;
+}
+
+.sicop-table tr:hover td { background: var(--hover); }
+
+.sicop-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ====================== ADMIN ====================== */
+.admin-hero-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+.admin-metric {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--bg-elev-2), var(--panel));
+  padding: 14px;
+}
+.admin-metric.is-ok { border-color: rgba(46,194,126,0.28); }
+.admin-metric.is-warn { border-color: rgba(230,162,60,0.34); }
+.admin-metric-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-muted);
+}
+.admin-metric-value {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-metric-detail {
+  margin-top: 6px;
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+.admin-upload {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(91,141,239,0.08), rgba(91,141,239,0.02));
+  padding: 18px;
+}
+.admin-upload.is-secondary {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+}
+.admin-file-drop {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  padding: 14px;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+.admin-file-drop input { max-width: 100%; }
+.admin-primary-button {
+  width: fit-content;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-secondary-button {
+  width: fit-content;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.admin-pill,
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+.admin-pill {
+  border: 1px solid var(--border-strong);
+  color: var(--fg-muted);
+}
+.admin-status.is-ok {
+  border: 1px solid rgba(46,194,126,0.35);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.admin-status.is-warn {
+  border: 1px solid rgba(230,162,60,0.35);
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.admin-status.is-muted {
+  border: 1px solid var(--border-strong);
+  color: var(--fg-muted);
+}
+.admin-timeline {
+  display: grid;
+  gap: 14px;
+}
+.admin-timeline-item {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  gap: 10px;
+}
+.admin-timeline-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+@media (min-width: 640px) {
+  .admin-hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .admin-hero-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

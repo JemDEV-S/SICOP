@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum TipoProdProy {
+  PRODUCTO
+  PROYECTO
+}
+
+enum RolUsuario {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum EstadoCarga {
+  PROCESANDO
+  EXITOSA
+  FALLIDA
+}
+
+enum CategoriaGasto {
+  CORRIENTE
+  CAPITAL
+  SERVICIO_DEUDA
+}
+
+enum AccionAuditoria {
+  LOGIN
+  LOGOUT
+  CARGA_CREADA
+  CARGA_RESTAURADA
+  CARGA_ELIMINADA
+  USUARIO_CREADO
+  USUARIO_ACTUALIZADO
+  USUARIO_DESACTIVADO
+}
+
+model DimRubro {
+  id            Int               @id @default(autoincrement()) @db.SmallInt
+  codigo        String            @unique(map: "uk_rubro_codigo") @db.VarChar(8)
+  nombre        String            @db.VarChar(200)
+  fuenteCodigo  String            @map("fuente_codigo") @db.VarChar(4)
+  fuenteNombre  String            @map("fuente_nombre") @db.VarChar(100)
+  nombreCorto   String            @map("nombre_corto") @db.VarChar(20)
+  descripcion   String?           @db.Text
+  hechos        HechoEjecucion[]
+
+  @@map("dim_rubro")
+}
+
+model DimClasificadorGasto {
+  id                   Int               @id @default(autoincrement())
+  codigo               String            @unique(map: "uk_clasif_codigo") @db.VarChar(20)
+  codigoPadre          String?           @map("codigo_padre") @db.VarChar(20)
+  nivel                Int               @db.TinyInt
+  descripcion          String            @db.VarChar(300)
+  descripcionDetallada String?           @map("descripcion_detallada") @db.Text
+  restringido          Boolean           @default(false)
+  hechos               HechoEjecucion[]
+
+  @@index([codigoPadre], map: "idx_clasif_padre")
+  @@index([nivel], map: "idx_clasif_nivel")
+  @@map("dim_clasificador_gasto")
+}
+
+model DimUnidadOrganica {
+  id            Int                  @id @default(autoincrement())
+  nivel         Int                  @db.TinyInt
+  padreId       Int?                 @map("padre_id")
+  nombre        String               @db.VarChar(200)
+  nombreCorto   String?              @map("nombre_corto") @db.VarChar(50)
+  ruta          String               @db.VarChar(800)
+  rutaNombres   String               @map("ruta_nombres") @db.VarChar(1000)
+  padre         DimUnidadOrganica?   @relation("UnidadOrganicaArbol", fields: [padreId], references: [id])
+  hijos         DimUnidadOrganica[]  @relation("UnidadOrganicaArbol")
+  metas         DimMeta[]
+
+  @@index([padreId], map: "idx_uo_padre")
+  @@index([nivel], map: "idx_uo_nivel")
+  @@index([ruta(length: 255)], map: "idx_uo_ruta")
+  @@unique([nivel, padreId, nombre], map: "uk_uo_nivel_padre_nombre")
+  @@map("dim_unidad_organica")
+}
+
+model DimProgramaPptal {
+  id      Int       @id @default(autoincrement()) @db.SmallInt
+  codigo  String    @unique(map: "uk_pp_codigo") @db.VarChar(8)
+  nombre  String    @db.VarChar(200)
+  metas   DimMeta[]
+
+  @@map("dim_programa_pptal")
+}
+
+model DimFuncion {
+  id             Int       @id @default(autoincrement()) @db.SmallInt
+  codigo         String    @db.VarChar(8)
+  nombre         String    @db.VarChar(150)
+  divisionCodigo String?   @map("division_codigo") @db.VarChar(8)
+  divisionNombre String?   @map("division_nombre") @db.VarChar(150)
+  grupoCodigo    String?   @map("grupo_codigo") @db.VarChar(8)
+  grupoNombre    String?   @map("grupo_nombre") @db.VarChar(150)
+  metas          DimMeta[]
+
+  @@unique([codigo, divisionCodigo, grupoCodigo], map: "uk_func")
+  @@map("dim_funcion")
+}
+
+model DimMeta {
+  id                     Int                  @id @default(autoincrement())
+  anoEje                 Int                  @map("ano_eje") @db.SmallInt
+  meta                   Int
+  secFunc                Int                  @map("sec_func")
+  finalidadCodigo        String               @map("finalidad_codigo") @db.VarChar(10)
+  finalidadNombre        String               @map("finalidad_nombre") @db.Text
+  tipoProdProy           TipoProdProy         @map("tipo_prod_proy")
+  productoProyectoCodigo String               @map("producto_proyecto_codigo") @db.VarChar(10)
+  productoProyectoNombre String               @map("producto_proyecto_nombre") @db.Text
+  cui                    String?              @db.VarChar(10)
+  programaPptalId        Int?                 @map("programa_pptal_id") @db.SmallInt
+  funcionId              Int?                 @map("funcion_id") @db.SmallInt
+  unidadOrganicaId       Int                  @map("unidad_organica_id")
+  nombreCorto            String?              @map("nombre_corto") @db.VarChar(150)
+  programaPptal          DimProgramaPptal?    @relation(fields: [programaPptalId], references: [id])
+  funcion                DimFuncion?          @relation(fields: [funcionId], references: [id])
+  unidadOrganica         DimUnidadOrganica    @relation(fields: [unidadOrganicaId], references: [id])
+  hechos                 HechoEjecucion[]
+
+  @@unique([anoEje, meta, secFunc], map: "uk_meta")
+  @@index([cui], map: "idx_meta_cui")
+  @@index([unidadOrganicaId], map: "idx_meta_uo")
+  @@index([programaPptalId], map: "idx_meta_pp")
+  @@map("dim_meta")
+}
+
+model Usuario {
+  id             Int          @id @default(autoincrement())
+  username       String       @unique(map: "uk_usuario_username") @db.VarChar(50)
+  email          String       @unique(map: "uk_usuario_email") @db.VarChar(150)
+  passwordHash   String       @map("password_hash") @db.VarChar(255)
+  nombreCompleto String       @map("nombre_completo") @db.VarChar(150)
+  rol            RolUsuario   @default(ADMIN)
+  activo         Boolean      @default(true)
+  ultimoAcceso   DateTime?    @map("ultimo_acceso")
+  creadoEn       DateTime     @default(now()) @map("creado_en")
+  actualizadoEn  DateTime     @updatedAt @map("actualizado_en")
+  cargas         Carga[]
+  auditorias     Auditoria[]
+
+  @@map("usuarios")
+}
+
+model Carga {
+  id               Int               @id @default(autoincrement())
+  anoEje           Int               @map("ano_eje") @db.SmallInt
+  nombreArchivo    String            @map("nombre_archivo") @db.VarChar(255)
+  hashArchivo      String            @map("hash_archivo") @db.Char(64)
+  totalFilas       Int               @default(0) @map("total_filas")
+  totalRegistros   Int               @default(0) @map("total_registros")
+  estado           EstadoCarga       @default(PROCESANDO)
+  esVigente        Boolean           @default(false) @map("es_vigente")
+  mensajeError     String?           @map("mensaje_error") @db.Text
+  usuarioId        Int?              @map("usuario_id")
+  creadoEn         DateTime          @default(now()) @map("creado_en")
+  procesadoEn      DateTime?         @map("procesado_en")
+  usuario          Usuario?          @relation(fields: [usuarioId], references: [id])
+  hechos           HechoEjecucion[]
+
+  @@unique([hashArchivo], map: "uk_carga_hash")
+  @@index([anoEje, esVigente], map: "idx_carga_vigente")
+  @@index([estado], map: "idx_carga_estado")
+  @@map("cargas")
+}
+
+model HechoEjecucion {
+  id                  BigInt                @id @default(autoincrement())
+  cargaId             Int                   @map("carga_id")
+  anoEje              Int                   @map("ano_eje") @db.SmallInt
+  mes                 Int                   @db.TinyInt
+  metaId              Int                   @map("meta_id")
+  rubroId             Int                   @map("rubro_id") @db.SmallInt
+  clasificadorId      Int                   @map("clasificador_id")
+  categoriaGasto      CategoriaGasto        @map("categoria_gasto")
+  mtoPia              Decimal               @default(0) @map("mto_pia") @db.Decimal(16, 2)
+  mtoModificaciones   Decimal               @default(0) @map("mto_modificaciones") @db.Decimal(16, 2)
+  mtoPim              Decimal               @default(0) @map("mto_pim") @db.Decimal(16, 2)
+  mtoCertificado      Decimal               @default(0) @map("mto_certificado") @db.Decimal(16, 2)
+  mtoCompromisoAnual  Decimal               @default(0) @map("mto_compromiso_anual") @db.Decimal(16, 2)
+  mtoCompromisoMes    Decimal               @default(0) @map("mto_compromiso_mes") @db.Decimal(16, 2)
+  mtoDevengado        Decimal               @default(0) @map("mto_devengado") @db.Decimal(16, 2)
+  mtoGirado           Decimal               @default(0) @map("mto_girado") @db.Decimal(16, 2)
+  mtoPagado           Decimal               @default(0) @map("mto_pagado") @db.Decimal(16, 2)
+  creadoEn            DateTime              @default(now()) @map("creado_en")
+  carga               Carga                 @relation(fields: [cargaId], references: [id], onDelete: Cascade)
+  metaDim             DimMeta               @relation(fields: [metaId], references: [id])
+  rubro               DimRubro              @relation(fields: [rubroId], references: [id])
+  clasificador        DimClasificadorGasto  @relation(fields: [clasificadorId], references: [id])
+
+  @@index([cargaId, anoEje, mes], map: "idx_hecho_carga_mes")
+  @@index([metaId], map: "idx_hecho_meta")
+  @@index([rubroId], map: "idx_hecho_rubro")
+  @@index([clasificadorId], map: "idx_hecho_clasif")
+  @@index([categoriaGasto], map: "idx_hecho_categoria")
+  @@map("hechos_ejecucion")
+}
+
+model Auditoria {
+  id        BigInt           @id @default(autoincrement())
+  usuarioId Int?             @map("usuario_id")
+  accion    AccionAuditoria
+  entidad   String?          @db.VarChar(80)
+  entidadId String?          @map("entidad_id") @db.VarChar(80)
+  detalle   Json?
+  ip        String?          @db.VarChar(45)
+  userAgent String?          @map("user_agent") @db.VarChar(300)
+  creadoEn  DateTime         @default(now()) @map("creado_en")
+  usuario   Usuario?         @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId], map: "idx_auditoria_usuario")
+  @@index([accion], map: "idx_auditoria_accion")
+  @@index([creadoEn], map: "idx_auditoria_fecha")
+  @@map("auditoria")
+}
+
+model IntentoLogin {
+  id        BigInt    @id @default(autoincrement())
+  ip        String    @db.VarChar(45)
+  username  String?   @db.VarChar(50)
+  exitoso   Boolean   @default(false)
+  creadoEn  DateTime  @default(now()) @map("creado_en")
+
+  @@index([ip, creadoEn], map: "idx_intento_login_ip_fecha")
+  @@map("intentos_login")
+}

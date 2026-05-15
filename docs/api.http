@@ -1,0 +1,58 @@
+@baseUrl = http://localhost:3000
+
+### Health
+GET {{baseUrl}}/api/health
+
+### Carga vigente
+GET {{baseUrl}}/api/cargas/vigente
+
+### Historial de cargas
+GET {{baseUrl}}/api/cargas/historial
+
+### KPIs oficiales, incluye clasificadores restringidos
+GET {{baseUrl}}/api/ejecucion/kpis
+
+### KPIs sin clasificadores restringidos
+GET {{baseUrl}}/api/ejecucion/kpis?incluirRestringido=false
+
+### KPIs filtrados por rubro Canon
+GET {{baseUrl}}/api/ejecucion/kpis?rubros=18
+
+### Series mensuales
+GET {{baseUrl}}/api/ejecucion/series-mensuales
+
+### Distribucion por rubro
+GET {{baseUrl}}/api/ejecucion/distribucion-rubro
+
+### Distribucion por generica de gasto
+GET {{baseUrl}}/api/ejecucion/distribucion-generica
+
+### Distribucion organica
+GET {{baseUrl}}/api/ejecucion/distribucion-organica
+
+### Ranking de metas
+GET {{baseUrl}}/api/ejecucion/ranking-metas?limit=10
+
+### Tabla por meta
+GET {{baseUrl}}/api/ejecucion/tabla?groupBy=meta&limit=20
+
+### Tabla por rubro
+GET {{baseUrl}}/api/ejecucion/tabla?groupBy=rubro
+
+### Heatmap mes por generica
+GET {{baseUrl}}/api/ejecucion/heatmap-mes-generica
+
+### Catalogo de unidades organicas
+GET {{baseUrl}}/api/catalogos/unidades-organicas
+
+### Catalogo de metas
+GET {{baseUrl}}/api/catalogos/metas?limit=20
+
+### Catalogo de rubros
+GET {{baseUrl}}/api/catalogos/rubros
+
+### Catalogo de clasificadores
+GET {{baseUrl}}/api/catalogos/clasificadores?limit=20
+
+### Catalogo de programas
+GET {{baseUrl}}/api/catalogos/programas
