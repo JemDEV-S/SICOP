@@ -1,5 +1,4 @@
 node_modules
-.next
 out
 dist
 .env
@@ -8,3 +7,5 @@ dist
 coverage
 .vercel
 public/uploads
+.next/cache
+.next/dev
