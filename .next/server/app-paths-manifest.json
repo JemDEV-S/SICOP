@@ -1,6 +1,7 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/page": "app/admin/page.js",
   "/api/admin/cargas/[id]/restaurar/route": "app/api/admin/cargas/[id]/restaurar/route.js",
   "/api/admin/cargas/route": "app/api/admin/cargas/route.js",
   "/api/admin/login/route": "app/api/admin/login/route.js",
@@ -27,6 +28,5 @@
   "/login/page": "app/login/page.js",
   "/mensual/page": "app/mensual/page.js",
   "/page": "app/page.js",
-  "/reporte-principal/page": "app/reporte-principal/page.js",
-  "/admin/page": "app/admin/page.js"
+  "/reporte-principal/page": "app/reporte-principal/page.js"
 }

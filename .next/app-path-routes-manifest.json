@@ -1,6 +1,7 @@
 {
-  "/_not-found/page": "/_not-found",
   "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/page": "/admin",
   "/api/admin/cargas/[id]/restaurar/route": "/api/admin/cargas/[id]/restaurar",
   "/api/admin/cargas/route": "/api/admin/cargas",
   "/api/admin/login/route": "/api/admin/login",
@@ -27,6 +28,5 @@
   "/login/page": "/login",
   "/mensual/page": "/mensual",
   "/page": "/",
-  "/reporte-principal/page": "/reporte-principal",
-  "/admin/page": "/admin"
+  "/reporte-principal/page": "/reporte-principal"
 }
