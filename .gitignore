@@ -7,5 +7,4 @@ dist
 coverage
 .vercel
 public/uploads
-.next/cache
-.next/dev
+.next
