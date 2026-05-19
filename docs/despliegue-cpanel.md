@@ -51,6 +51,8 @@ Para generar `NEXTAUTH_SECRET`, puedes usar:
 openssl rand -base64 32
 ```
 
+`NEXTAUTH_URL` debe ser la URL publica real de la aplicacion, por ejemplo `https://sicop.tu-dominio.com`. No uses `localhost`, `127.0.0.1` ni `0.0.0.0` en produccion; si esta variable queda mal, los formularios administrativos pueden redirigir a una direccion interna del servidor.
+
 ## 3. Subir el proyecto
 
 Sube el proyecto a una carpeta fuera de `public_html`, por ejemplo:

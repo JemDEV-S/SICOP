@@ -1,15 +1,16 @@
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { absoluteUrl } from "@/lib/url";
 
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const actor = await requireAdmin();
   if (actor.rol !== "SUPER_ADMIN") return new Response("Forbidden", { status: 403 });
   const { id } = await context.params;
   const userId = Number(id);
-  if (userId === actor.id) return Response.redirect(new URL("/admin?user=self", request.url));
+  if (userId === actor.id) return Response.redirect(absoluteUrl("/admin?user=self", request));
 
   const user = await prisma.usuario.findUnique({ where: { id: userId } });
-  if (!user) return Response.redirect(new URL("/admin?user=missing", request.url));
+  if (!user) return Response.redirect(absoluteUrl("/admin?user=missing", request));
 
   await prisma.$transaction([
     prisma.usuario.update({ where: { id: user.id }, data: { activo: !user.activo } }),
@@ -23,5 +24,5 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }),
   ]);
 
-  return Response.redirect(new URL("/admin?user=updated", request.url));
+  return Response.redirect(absoluteUrl("/admin?user=updated", request));
 }

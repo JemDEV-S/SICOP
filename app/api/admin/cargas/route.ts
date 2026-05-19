@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { procesarCargaExcel } from "@/lib/ingestion/procesarCarga";
 import { procesarCargaCrudaExcel } from "@/lib/ingestion/raw";
+import { absoluteUrl } from "@/lib/url";
 
 export async function POST(request: Request) {
   const user = await requireAdmin();
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   const tipo = String(form.get("tipo") ?? "completo");
   const extensionValida = tipo === "crudo" ? /\.(xls|xlsx)$/i.test(file instanceof File ? file.name : "") : /\.xlsx$/i.test(file instanceof File ? file.name : "");
   if (!(file instanceof File) || !extensionValida) {
-    return Response.redirect(new URL("/admin?upload=invalid", request.url));
+    return Response.redirect(absoluteUrl("/admin?upload=invalid", request));
   }
 
   const dir = join(tmpdir(), "sicop-uploads");
@@ -30,9 +31,9 @@ export async function POST(request: Request) {
     await prisma.auditoria.create({
       data: { usuarioId: user.id, accion: "CARGA_CREADA", entidad: "cargas", entidadId: String(result.cargaId), detalle: result },
     });
-    return Response.redirect(new URL("/admin?upload=ok", request.url));
+    return Response.redirect(absoluteUrl("/admin?upload=ok", request));
   } catch (error) {
-    return Response.redirect(new URL(`/admin?upload=error&message=${encodeURIComponent(error instanceof Error ? error.message : "Error")}`, request.url));
+    return Response.redirect(absoluteUrl(`/admin?upload=error&message=${encodeURIComponent(error instanceof Error ? error.message : "Error")}`, request));
   } finally {
     await unlink(path).catch(() => undefined);
   }

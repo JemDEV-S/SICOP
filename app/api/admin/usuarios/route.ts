@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { absoluteUrl } from "@/lib/url";
 
 export async function POST(request: Request) {
   const actor = await requireAdmin();
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   const rol = form.get("rol") === "SUPER_ADMIN" ? "SUPER_ADMIN" : "ADMIN";
 
   if (!username || !email || !nombreCompleto || password.length < 8) {
-    return Response.redirect(new URL("/admin?user=invalid", request.url));
+    return Response.redirect(absoluteUrl("/admin?user=invalid", request));
   }
 
   const user = await prisma.usuario.create({
@@ -29,5 +30,5 @@ export async function POST(request: Request) {
   await prisma.auditoria.create({
     data: { usuarioId: actor.id, accion: "USUARIO_CREADO", entidad: "usuarios", entidadId: String(user.id) },
   });
-  return Response.redirect(new URL("/admin?user=created", request.url));
+  return Response.redirect(absoluteUrl("/admin?user=created", request));
 }
