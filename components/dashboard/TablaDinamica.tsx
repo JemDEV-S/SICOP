@@ -105,11 +105,14 @@ export function TablaDinamica({ data, groupBy }: { data: TablaRow[]; groupBy: st
       {isPending ? <p className="px-4 pt-3 text-xs text-[#8a93a6]">Actualizando tabla...</p> : null}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-xs">
-          <thead className="text-left text-[#8a93a6]">
+          <thead className="text-[#8a93a6]">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th key={header.id} className="border-b border-[#1f2530] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wide">
+                {headerGroup.headers.map((header, idx) => (
+                  <th
+                    key={header.id}
+                    className={`border-b border-[#1f2530] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wide ${idx === 0 ? "text-left" : "text-center"}`}
+                  >
                     {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}

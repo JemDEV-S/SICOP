@@ -113,13 +113,18 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg-elev);
   color: var(--fg-muted);
   padding: 9px 10px;
-  text-align: left;
+  text-align: center;
   font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   white-space: nowrap;
   border-bottom: 1px solid var(--border-strong);
+}
+
+/* Primera columna de texto: mantener alineación izquierda para etiquetas */
+.sicop-table th:first-child {
+  text-align: left;
 }
 
 .sicop-table td {

@@ -4,6 +4,7 @@ import { SicopFilterBar } from "@/components/sicop/SicopFilterBar";
 import { SicopKpis } from "@/components/sicop/SicopKpis";
 import { SicopMonthlyTable } from "@/components/sicop/SicopMonthly";
 import { SicopHorizontalBars } from "@/components/sicop/SicopBars";
+import { monthLong } from "@/components/sicop/SicopFormat";
 import { isNoCargaVigenteError, NoCargaVigentePanel } from "@/components/sicop/NoCargaVigente";
 import { Panel, Section, SicopShell } from "@/components/sicop/SicopShell";
 
@@ -36,7 +37,7 @@ export default async function MensualPage({ searchParams }: PageProps) {
         <SicopKpis data={kpis} />
         <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_1.4fr]">
           <Panel title="Devengado por mes">
-            <SicopHorizontalBars data={series.map((item) => ({ label: `Mes ${item.mes}`, value: item.devengado }))} />
+            <SicopHorizontalBars data={series.map((item) => ({ label: monthLong[item.mes - 1] ?? `Mes ${item.mes}`, value: item.devengado }))} />
           </Panel>
           <Panel title="Detalle mensual">
             <SicopMonthlyTable data={series} pim={kpis.kpis.pim} />

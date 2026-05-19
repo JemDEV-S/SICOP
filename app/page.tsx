@@ -9,6 +9,7 @@ import {
 } from "@/lib/api/queries";
 import { getPrincipalHierarchy } from "@/lib/api/view-queries";
 import { SicopHorizontalBars, SicopFlow } from "@/components/sicop/SicopBars";
+import { monthLong } from "@/components/sicop/SicopFormat";
 import { SicopFilterBar } from "@/components/sicop/SicopFilterBar";
 import { SicopKpis } from "@/components/sicop/SicopKpis";
 import { isNoCargaVigenteError, NoCargaVigentePanel } from "@/components/sicop/NoCargaVigente";
@@ -90,7 +91,7 @@ export default async function Home({ searchParams }: PageProps) {
             <SicopHorizontalBars data={rubro.map((item) => ({ label: `${item.codigo} ${item.nombreCorto}`, value: item.pim }))} />
           </Panel>
           <Panel title="Devengado mensual">
-            <SicopHorizontalBars data={series.map((item) => ({ label: `Mes ${item.mes}`, value: item.devengado }))} />
+            <SicopHorizontalBars data={series.map((item) => ({ label: monthLong[item.mes - 1] ?? `Mes ${item.mes}`, value: item.devengado }))} />
           </Panel>
         </div>
 
