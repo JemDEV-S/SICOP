@@ -2,6 +2,8 @@ import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 
+export const NO_CARGA_VIGENTE_MESSAGE = "No hay una carga vigente disponible.";
+
 const csvNumberSchema = z
   .string()
   .optional()
@@ -94,7 +96,7 @@ export async function getCargaConsulta(filtros: Filtros) {
   });
 
   if (!carga) {
-    throw new Error("No hay una carga vigente disponible.");
+    throw new Error(NO_CARGA_VIGENTE_MESSAGE);
   }
 
   return carga;

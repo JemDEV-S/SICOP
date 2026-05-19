@@ -11,6 +11,7 @@ import { getPrincipalHierarchy } from "@/lib/api/view-queries";
 import { SicopHorizontalBars, SicopFlow } from "@/components/sicop/SicopBars";
 import { SicopFilterBar } from "@/components/sicop/SicopFilterBar";
 import { SicopKpis } from "@/components/sicop/SicopKpis";
+import { isNoCargaVigenteError, NoCargaVigentePanel } from "@/components/sicop/NoCargaVigente";
 import { Panel, Section, SicopShell } from "@/components/sicop/SicopShell";
 import { SicopPrincipalTable } from "@/components/sicop/SicopPrincipalTable";
 
@@ -23,12 +24,28 @@ export default async function Home({ searchParams }: PageProps) {
   const filtros = parsePageFiltros(params);
 
   // Una sola carga pesada; kpis/series/catalogos corren en paralelo
-  const [facts, kpis, series, catalogos] = await Promise.all([
+  const data = await Promise.all([
     getFactRows(filtros),
     getKpis(filtros),
     getSeriesMensuales(filtros),
     getCatalogosBasicos(),
-  ]);
+  ]).catch((error) => (isNoCargaVigenteError(error) ? null : Promise.reject(error)));
+
+  if (!data) {
+    return (
+      <SicopShell>
+        <Section
+          title="Dashboard de ejecucion presupuestal"
+          sub="Aun no hay una carga exitosa marcada como vigente."
+          tools={<span className="rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs text-amber-300">Sin datos</span>}
+        >
+          <NoCargaVigentePanel />
+        </Section>
+      </SicopShell>
+    );
+  }
+
+  const [facts, kpis, series, catalogos] = data;
 
   // Distribuciones usan los facts ya cargados — sin roundtrip adicional a la BD
   const [organica, generica, rubro, principal] = await Promise.all([

@@ -4,6 +4,7 @@ import { SicopFilterBar } from "@/components/sicop/SicopFilterBar";
 import { SicopKpis } from "@/components/sicop/SicopKpis";
 import { SicopMonthlyTable } from "@/components/sicop/SicopMonthly";
 import { SicopHorizontalBars } from "@/components/sicop/SicopBars";
+import { isNoCargaVigenteError, NoCargaVigentePanel } from "@/components/sicop/NoCargaVigente";
 import { Panel, Section, SicopShell } from "@/components/sicop/SicopShell";
 
 type PageProps = {
@@ -12,7 +13,21 @@ type PageProps = {
 
 export default async function MensualPage({ searchParams }: PageProps) {
   const filtros = parsePageFiltros((await searchParams) ?? {});
-  const [kpis, series, catalogos] = await Promise.all([getKpis(filtros), getSeriesMensuales(filtros), getCatalogosBasicos()]);
+  const data = await Promise.all([getKpis(filtros), getSeriesMensuales(filtros), getCatalogosBasicos()]).catch((error) =>
+    isNoCargaVigenteError(error) ? null : Promise.reject(error),
+  );
+
+  if (!data) {
+    return (
+      <SicopShell>
+        <Section title="Ejecucion mensual" sub="Aun no hay una carga exitosa marcada como vigente.">
+          <NoCargaVigentePanel />
+        </Section>
+      </SicopShell>
+    );
+  }
+
+  const [kpis, series, catalogos] = data;
 
   return (
     <SicopShell>

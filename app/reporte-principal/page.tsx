@@ -4,6 +4,7 @@ import { getPrincipalHierarchy } from "@/lib/api/view-queries";
 import { SicopFilterBar } from "@/components/sicop/SicopFilterBar";
 import { SicopKpis } from "@/components/sicop/SicopKpis";
 import { SicopPrincipalTable } from "@/components/sicop/SicopPrincipalTable";
+import { isNoCargaVigenteError, NoCargaVigentePanel } from "@/components/sicop/NoCargaVigente";
 import { Panel, Section, SicopShell } from "@/components/sicop/SicopShell";
 
 type PageProps = {
@@ -12,7 +13,21 @@ type PageProps = {
 
 export default async function ReportePrincipalPage({ searchParams }: PageProps) {
   const filtros = parsePageFiltros((await searchParams) ?? {});
-  const [kpis, principal, catalogos] = await Promise.all([getKpis(filtros), getPrincipalHierarchy(filtros), getCatalogosBasicos()]);
+  const data = await Promise.all([getKpis(filtros), getPrincipalHierarchy(filtros), getCatalogosBasicos()]).catch((error) =>
+    isNoCargaVigenteError(error) ? null : Promise.reject(error),
+  );
+
+  if (!data) {
+    return (
+      <SicopShell>
+        <Section title="Reporte principal jerarquico" sub="Aun no hay una carga exitosa marcada como vigente.">
+          <NoCargaVigentePanel />
+        </Section>
+      </SicopShell>
+    );
+  }
+
+  const [kpis, principal, catalogos] = data;
 
   return (
     <SicopShell>

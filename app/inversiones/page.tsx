@@ -4,6 +4,7 @@ import { getInversiones } from "@/lib/api/view-queries";
 import { money, pct, pctTone } from "@/components/sicop/SicopFormat";
 import { SicopFilterBar } from "@/components/sicop/SicopFilterBar";
 import { SicopKpis } from "@/components/sicop/SicopKpis";
+import { isNoCargaVigenteError, NoCargaVigentePanel } from "@/components/sicop/NoCargaVigente";
 import { Panel, Section, SicopShell } from "@/components/sicop/SicopShell";
 
 type PageProps = {
@@ -12,7 +13,21 @@ type PageProps = {
 
 export default async function InversionesPage({ searchParams }: PageProps) {
   const filtros = parsePageFiltros((await searchParams) ?? {});
-  const [kpis, inversiones, catalogos] = await Promise.all([getKpis({ ...filtros, tipoProdProy: ["PROYECTO"] }), getInversiones(filtros), getCatalogosBasicos()]);
+  const data = await Promise.all([getKpis({ ...filtros, tipoProdProy: ["PROYECTO"] }), getInversiones(filtros), getCatalogosBasicos()]).catch((error) =>
+    isNoCargaVigenteError(error) ? null : Promise.reject(error),
+  );
+
+  if (!data) {
+    return (
+      <SicopShell>
+        <Section title="Inversiones" sub="Aun no hay una carga exitosa marcada como vigente.">
+          <NoCargaVigentePanel />
+        </Section>
+      </SicopShell>
+    );
+  }
+
+  const [kpis, inversiones, catalogos] = data;
 
   return (
     <SicopShell>

@@ -79,10 +79,12 @@ En cPanel:
 5. Define como archivo de inicio:
 
 ```text
-server.js
+.next/standalone/server.js
 ```
 
 6. Agrega las variables de entorno del paso 2.
+
+Si tu cPanel no acepta rutas dentro de `.next`, usa `server.js` como archivo de inicio solo si el proveedor ejecuta directamente ese archivo. No uses `next start` con este proyecto en produccion: la compilacion se genera en modo `standalone`.
 
 ## 5. Instalar y construir
 
@@ -97,6 +99,12 @@ npm run prisma:seed
 ```
 
 Si ya existe un administrador real en produccion, ejecuta el seed solo una vez o ajusta primero sus datos.
+
+El script `npm start` debe ejecutar:
+
+```bash
+node .next/standalone/server.js
+```
 
 ## 6. Reiniciar la aplicacion
 
@@ -117,6 +125,17 @@ Puedes cargar un Excel desde el panel administrativo o por terminal:
 npm run import:excel -- archivo.xlsx
 ```
 
+Despues de cargar datos, verifica que exista una carga vigente:
+
+```sql
+SELECT id, ano_eje, estado, es_vigente, total_registros, procesado_en, mensaje_error
+FROM cargas
+ORDER BY id DESC
+LIMIT 5;
+```
+
+Debe existir al menos una fila con `estado = 'EXITOSA'` y `es_vigente = 1`. Si no existe, el dashboard no tendra datos para consultar.
+
 ## Problemas comunes
 
 ### El hosting solo tiene Node.js 18
@@ -134,6 +153,26 @@ Revisa:
 ### Error 500 al iniciar
 
 Revisa los logs de la app en la carpeta `logs/` o en el panel de Node.js de cPanel.
+
+Si aparece:
+
+```text
+"next start" does not work with "output: standalone" configuration
+```
+
+El panel esta ejecutando `next start` o `npm start` antiguo. Cambia el comando de arranque a:
+
+```bash
+node .next/standalone/server.js
+```
+
+Si aparece:
+
+```text
+No hay una carga vigente disponible.
+```
+
+La aplicacion arranco, pero la base no tiene ninguna carga `EXITOSA` marcada como vigente. Sube un Excel desde `/admin` o importa por terminal y confirma la tabla `cargas` con la consulta SQL del paso 7.
 
 ### Subidas de Excel fallan
 
