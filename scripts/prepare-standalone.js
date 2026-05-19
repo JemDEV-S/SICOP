@@ -18,11 +18,24 @@ copyPrismaEngine();
 console.log("Standalone assets listos.");
 
 function findPrismaDir() {
+  const candidates = [path.join(root, "node_modules", ".prisma")];
+
   try {
     const generatedClientPkg = require.resolve(".prisma/client/package.json");
-    return path.dirname(path.dirname(generatedClientPkg));
-  } catch {
-    return path.join(root, "node_modules", ".prisma");
+    candidates.push(path.dirname(path.dirname(generatedClientPkg)));
+  } catch {}
+
+  try {
+    const clientPkg = require.resolve("@prisma/client/package.json");
+    candidates.push(path.join(path.dirname(path.dirname(clientPkg)), ".prisma"));
+  } catch {}
+
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
+function copyOptional(source, target) {
+  if (source && fs.existsSync(source)) {
+    copyDir(source, target);
   }
 }
 
@@ -75,12 +88,6 @@ function copyRequired(source, target) {
     throw new Error(`No existe ${path.relative(root, source)}. Ejecuta next build antes de preparar standalone.`);
   }
   copyDir(source, target);
-}
-
-function copyOptional(source, target) {
-  if (fs.existsSync(source)) {
-    copyDir(source, target);
-  }
 }
 
 function copyDir(source, target) {
