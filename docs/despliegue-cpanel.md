@@ -40,6 +40,8 @@ UPLOAD_MAX_MB=10
 RATE_LIMIT_LOGIN=5
 LOG_LEVEL=info
 TZ=America/Lima
+UV_THREADPOOL_SIZE=2
+TOKIO_WORKER_THREADS=2
 SEED_ADMIN_USERNAME=admin
 SEED_ADMIN_EMAIL=admin@tu-dominio.com
 SEED_ADMIN_PASSWORD=CAMBIA_ESTA_CLAVE
@@ -52,6 +54,8 @@ openssl rand -base64 32
 ```
 
 `NEXTAUTH_URL` debe ser la URL publica real de la aplicacion, por ejemplo `https://sicop.tu-dominio.com`. No uses `localhost`, `127.0.0.1` ni `0.0.0.0` en produccion; si esta variable queda mal, los formularios administrativos pueden redirigir a una direccion interna del servidor.
+
+No configures `PRISMA_CLIENT_ENGINE_TYPE=binary`. El proyecto usa Prisma con `engineType = "library"` para evitar procesos externos `query-engine` en cPanel. Si esa variable existe en `.env` o en el panel Node.js, el build volvera a generar Prisma Client en modo binary y consumira muchos procesos/threads del limite de cPanel.
 
 ## 3. Subir el proyecto
 
@@ -127,6 +131,20 @@ Luego prueba:
 ```text
 https://tu-dominio.com/api/health
 https://tu-dominio.com/login
+```
+
+En hosting con limite bajo de procesos, deja `.htaccess` con:
+
+```apache
+PassengerMaxPoolSize 1
+PassengerMinInstances 1
+```
+
+Si subes `PassengerMaxPoolSize` a `2`, cada worker de Next.js carga su propio Prisma Client y puede consumir decenas de threads. Valida el consumo real con:
+
+```bash
+pgrep -af "next-server|query-engine|prisma"
+ps -u USUARIO -o pid,ppid,nlwp,comm,args --sort=-nlwp | head -20
 ```
 
 ## 7. Primera carga de datos

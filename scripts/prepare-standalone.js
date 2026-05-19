@@ -13,16 +13,60 @@ const targetPrisma = path.join(standaloneDir, "node_modules", ".prisma");
 copyRequired(sourceStatic, targetStatic);
 copyOptional(sourcePublic, targetPublic);
 copyOptional(sourcePrisma, targetPrisma);
+copyPrismaEngine();
 
 console.log("Standalone assets listos.");
 
-// Resolves .prisma regardless of whether packages live in local node_modules or nodevenv
 function findPrismaDir() {
   try {
-    const clientPkg = require.resolve("@prisma/client/package.json");
-    return path.join(path.dirname(path.dirname(clientPkg)), ".prisma");
+    const generatedClientPkg = require.resolve(".prisma/client/package.json");
+    return path.dirname(path.dirname(generatedClientPkg));
   } catch {
     return path.join(root, "node_modules", ".prisma");
+  }
+}
+
+// Copies only the Prisma Node-API library engine into the standalone bundle.
+// Keeping the binary query-engine around can make cPanel count extra LVE tasks.
+function copyPrismaEngine() {
+  let enginesDir;
+  try {
+    enginesDir = path.dirname(require.resolve("@prisma/engines/package.json"));
+  } catch {
+    console.warn("  @prisma/engines no encontrado, se omite copia del engine.");
+    return;
+  }
+
+  const engineFiles = fs.readdirSync(enginesDir).filter(isPrismaLibraryEngine);
+
+  if (engineFiles.length === 0) {
+    console.warn("  No se encontro el engine library de Prisma en", enginesDir);
+    return;
+  }
+
+  const targetDir = path.join(standaloneDir, "node_modules", ".prisma", "client");
+  fs.mkdirSync(targetDir, { recursive: true });
+  removePrismaBinaryEngines(targetDir);
+
+  for (const file of engineFiles) {
+    fs.copyFileSync(path.join(enginesDir, file), path.join(targetDir, file));
+    console.log(`  Engine copiado: ${file}`);
+  }
+}
+
+function isPrismaLibraryEngine(file) {
+  return (
+    file.includes("query_engine") &&
+    (file.endsWith(".so.node") || file.endsWith(".dll.node") || file.endsWith(".dylib.node"))
+  );
+}
+
+function removePrismaBinaryEngines(targetDir) {
+  for (const file of fs.readdirSync(targetDir)) {
+    if (file.startsWith("query-engine") && !file.endsWith(".node")) {
+      fs.rmSync(path.join(targetDir, file), { force: true });
+      console.log(`  Engine binario removido: ${file}`);
+    }
   }
 }
 

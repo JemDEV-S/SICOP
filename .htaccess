@@ -1,2 +1,2 @@
-PassengerMaxPoolSize 2
+PassengerMaxPoolSize 1
 PassengerMinInstances 1
