@@ -7,37 +7,12 @@ const sourceStatic = path.join(root, ".next", "static");
 const targetStatic = path.join(standaloneDir, ".next", "static");
 const sourcePublic = path.join(root, "public");
 const targetPublic = path.join(standaloneDir, "public");
-const sourcePrisma = findPrismaDir();
-const targetPrisma = path.join(standaloneDir, "node_modules", ".prisma");
 
 copyRequired(sourceStatic, targetStatic);
 copyOptional(sourcePublic, targetPublic);
-copyOptional(sourcePrisma, targetPrisma);
 copyPrismaEngine();
 
 console.log("Standalone assets listos.");
-
-function findPrismaDir() {
-  const candidates = [path.join(root, "node_modules", ".prisma")];
-
-  try {
-    const generatedClientPkg = require.resolve(".prisma/client/package.json");
-    candidates.push(path.dirname(path.dirname(generatedClientPkg)));
-  } catch {}
-
-  try {
-    const clientPkg = require.resolve("@prisma/client/package.json");
-    candidates.push(path.join(path.dirname(path.dirname(clientPkg)), ".prisma"));
-  } catch {}
-
-  return candidates.find((candidate) => fs.existsSync(candidate));
-}
-
-function copyOptional(source, target) {
-  if (source && fs.existsSync(source)) {
-    copyDir(source, target);
-  }
-}
 
 // Copies only the Prisma Node-API library engine into the standalone bundle.
 // Keeping the binary query-engine around can make cPanel count extra LVE tasks.
@@ -88,6 +63,12 @@ function copyRequired(source, target) {
     throw new Error(`No existe ${path.relative(root, source)}. Ejecuta next build antes de preparar standalone.`);
   }
   copyDir(source, target);
+}
+
+function copyOptional(source, target) {
+  if (fs.existsSync(source)) {
+    copyDir(source, target);
+  }
 }
 
 function copyDir(source, target) {
