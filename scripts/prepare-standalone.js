@@ -7,7 +7,7 @@ const sourceStatic = path.join(root, ".next", "static");
 const targetStatic = path.join(standaloneDir, ".next", "static");
 const sourcePublic = path.join(root, "public");
 const targetPublic = path.join(standaloneDir, "public");
-const sourcePrisma = path.join(root, "node_modules", ".prisma");
+const sourcePrisma = findPrismaDir();
 const targetPrisma = path.join(standaloneDir, "node_modules", ".prisma");
 
 copyRequired(sourceStatic, targetStatic);
@@ -16,11 +16,20 @@ copyOptional(sourcePrisma, targetPrisma);
 
 console.log("Standalone assets listos.");
 
+// Resolves .prisma regardless of whether packages live in local node_modules or nodevenv
+function findPrismaDir() {
+  try {
+    const clientPkg = require.resolve("@prisma/client/package.json");
+    return path.join(path.dirname(path.dirname(clientPkg)), ".prisma");
+  } catch {
+    return path.join(root, "node_modules", ".prisma");
+  }
+}
+
 function copyRequired(source, target) {
   if (!fs.existsSync(source)) {
     throw new Error(`No existe ${path.relative(root, source)}. Ejecuta next build antes de preparar standalone.`);
   }
-
   copyDir(source, target);
 }
 
