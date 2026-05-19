@@ -102,6 +102,8 @@ npm run prisma:seed
 
 Si ya existe un administrador real en produccion, ejecuta el seed solo una vez o ajusta primero sus datos.
 
+El build tambien copia los assets estaticos a `.next/standalone/.next/static`. Esa carpeta debe existir; si falta, otros navegadores veran errores 404 en `/_next/static/...` y la pagina cargara sin estilos.
+
 El script `npm start` debe ejecutar:
 
 ```bash
@@ -175,6 +177,17 @@ No hay una carga vigente disponible.
 ```
 
 La aplicacion arranco, pero la base no tiene ninguna carga `EXITOSA` marcada como vigente. Sube un Excel desde `/admin` o importa por terminal y confirma la tabla `cargas` con la consulta SQL del paso 7.
+
+### La pagina carga sin estilos o con 404 en `/_next/static`
+
+El servidor standalone necesita los assets dentro de `.next/standalone/.next/static`. Ejecuta nuevamente:
+
+```bash
+npm run build
+test -d .next/standalone/.next/static && echo "static OK"
+```
+
+Si `static OK` no aparece, sube el archivo `scripts/prepare-standalone.js`, vuelve a instalar dependencias si corresponde y reconstruye.
 
 ### Subidas de Excel fallan
 
