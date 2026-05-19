@@ -100,6 +100,14 @@ npm run build
 npm run prisma:seed
 ```
 
+Si el hosting instalo dependencias omitiendo las de desarrollo y el build falla con `Cannot find module 'tailwindcss'`, ejecuta:
+
+```bash
+npm install --include=dev
+```
+
+o vuelve a subir el `package.json` actualizado y ejecuta `npm install`.
+
 Si ya existe un administrador real en produccion, ejecuta el seed solo una vez o ajusta primero sus datos.
 
 El build tambien copia los assets estaticos a `.next/standalone/.next/static`. Esa carpeta debe existir; si falta, otros navegadores veran errores 404 en `/_next/static/...` y la pagina cargara sin estilos.
