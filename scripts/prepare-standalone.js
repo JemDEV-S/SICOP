@@ -7,9 +7,12 @@ const sourceStatic = path.join(root, ".next", "static");
 const targetStatic = path.join(standaloneDir, ".next", "static");
 const sourcePublic = path.join(root, "public");
 const targetPublic = path.join(standaloneDir, "public");
+const sourcePrisma = path.join(root, "node_modules", ".prisma");
+const targetPrisma = path.join(standaloneDir, "node_modules", ".prisma");
 
 copyRequired(sourceStatic, targetStatic);
 copyOptional(sourcePublic, targetPublic);
+copyOptional(sourcePrisma, targetPrisma);
 
 console.log("Standalone assets listos.");
 
