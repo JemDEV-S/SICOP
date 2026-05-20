@@ -56,6 +56,7 @@ export const filtrosSchema = z.object({
   tipoProdProy: csvStringSchema,
   incluirRestringido: optionalBoolDefaultTrue,
   q: z.string().optional().default(""),
+  cui: z.string().optional().default(""),
 });
 
 export type Filtros = z.infer<typeof filtrosSchema>;
@@ -155,33 +156,45 @@ export async function buildHechoWhere(
     where.mes = { gte: filtros.mesDesde, lte: filtros.mesHasta };
   }
 
-  if (filtros.metas.length > 0) {
-    metaWhere.id = { in: filtros.metas };
-  }
+  if (filtros.cui) {
+    // En el Excel cargado el campo 'cui' viene vacío; el CUI real está en productoProyectoCodigo.
+    // Buscamos en ambos campos para cubrir distintos formatos de carga.
+    const cuiVal = filtros.cui.trim();
+    where.metaDim = {
+      OR: [
+        { productoProyectoCodigo: cuiVal },
+        { cui: cuiVal },
+      ],
+    };
+  } else {
+    if (filtros.metas.length > 0) {
+      metaWhere.id = { in: filtros.metas };
+    }
 
-  if (filtros.programas.length > 0) {
-    metaWhere.programaPptal = { codigo: { in: filtros.programas } };
-  }
+    if (filtros.programas.length > 0) {
+      metaWhere.programaPptal = { codigo: { in: filtros.programas } };
+    }
 
-  if (filtros.tipoProdProy.length > 0) {
-    metaWhere.tipoProdProy = { in: filtros.tipoProdProy as Prisma.EnumTipoProdProyFilter["in"] };
-  }
+    if (filtros.tipoProdProy.length > 0) {
+      metaWhere.tipoProdProy = { in: filtros.tipoProdProy as Prisma.EnumTipoProdProyFilter["in"] };
+    }
 
-  if (filtros.q) {
-    metaWhere.OR = [
-      { finalidadNombre: { contains: filtros.q } },
-      { productoProyectoNombre: { contains: filtros.q } },
-      { cui: { contains: filtros.q } },
-      { nombreCorto: { contains: filtros.q } },
-    ];
-  }
+    if (filtros.q) {
+      metaWhere.OR = [
+        { finalidadNombre: { contains: filtros.q } },
+        { productoProyectoNombre: { contains: filtros.q } },
+        { cui: { contains: filtros.q } },
+        { nombreCorto: { contains: filtros.q } },
+      ];
+    }
 
-  if (unidadWhere) {
-    metaWhere.unidadOrganica = unidadWhere;
-  }
+    if (unidadWhere) {
+      metaWhere.unidadOrganica = unidadWhere;
+    }
 
-  if (Object.keys(metaWhere).length > 0) {
-    where.metaDim = metaWhere;
+    if (Object.keys(metaWhere).length > 0) {
+      where.metaDim = metaWhere;
+    }
   }
 
   if (filtros.rubros.length > 0) {

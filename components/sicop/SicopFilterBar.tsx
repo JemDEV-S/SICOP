@@ -4,22 +4,35 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { monthLong } from "./SicopFormat";
 
-type Option = { codigo?: string; id?: number; nombre: string; nombreCorto?: string | null; nivel?: number };
+type RubroOption      = { codigo: string; nombre: string; nombreCorto?: string | null };
+type UnidadOption     = { id: number; nivel: number; nombre: string; rutaNombres?: string | null };
+type GenericaOption   = { codigo: string; descripcion: string };
+type MetaOption       = {
+  id: number;
+  secFunc: number;
+  nombreCorto: string | null;
+  productoProyectoNombre: string;
+  productoProyectoCodigo: string;
+  tipoProdProy: string;
+  cui: string | null;
+};
 
 export function SicopFilterBar({
   rubros,
   unidades,
-  programas,
+  genericas,
 }: {
-  rubros: Option[];
-  unidades: Option[];
-  programas: Option[];
+  rubros: RubroOption[];
+  unidades: UnidadOption[];
+  genericas: GenericaOption[];
 }) {
-  const router      = useRouter();
-  const pathname    = usePathname();
-  const sp          = useSearchParams();
-  const [q, setQ]   = useState(sp.get("q") ?? "");
-  const [pending, startTransition] = useTransition();
+  const router   = useRouter();
+  const pathname = usePathname();
+  const sp       = useSearchParams();
+  const [cuiInput, setCuiInput]       = useState(sp.get("cui") ?? "");
+  const [metaLabel, setMetaLabel]     = useState("");
+  const [pending, startTransition]    = useTransition();
+  const cuiDebounce                   = useRef<ReturnType<typeof setTimeout>>();
 
   const val = (k: string) => sp.get(k) ?? "";
 
@@ -31,29 +44,36 @@ export function SicopFilterBar({
     startTransition(() => router.push(`${pathname}?${params.toString()}`));
   };
 
-  const mesDesde       = val("mesDesde")             || "1";
-  const mesHasta       = val("mesHasta")             || "12";
+  const mesDesde        = val("mesDesde")            || "1";
+  const mesHasta        = val("mesHasta")            || "12";
   const inclRestringido = val("incluirRestringido")  || "true";
-  const selRubro       = val("rubros");
-  const selUnidad      = val("unidades");
-  const selPrograma    = val("programas");
-  const currentQ       = val("q");
+  const selRubro        = val("rubros");
+  const selUnidad       = val("unidades");
+  const selMeta         = val("metas");
+  const currentCui      = val("cui");
+  const selClasif       = val("clasificadores");
 
   /* ── chips activos ── */
   type Chip = { key: string; label: string; value: string };
   const chips: Chip[] = [];
 
+  if (selUnidad) {
+    const f = unidades.find((u) => String(u.id) === selUnidad);
+    chips.push({ key: "unidades", label: "Unidad orgánica", value: f ? f.nombre : selUnidad });
+  }
+  if (selMeta) {
+    chips.push({ key: "metas", label: "Meta SF", value: metaLabel || `Meta #${selMeta}` });
+  }
+  if (currentCui) {
+    chips.push({ key: "cui", label: "CUI", value: currentCui });
+  }
   if (selRubro) {
     const f = rubros.find((r) => r.codigo === selRubro);
     chips.push({ key: "rubros", label: "Rubro", value: f ? (f.nombreCorto ?? f.nombre) : selRubro });
   }
-  if (selUnidad) {
-    const f = unidades.find((u) => String(u.id) === selUnidad);
-    chips.push({ key: "unidades", label: "Unidad", value: f ? f.nombre : selUnidad });
-  }
-  if (selPrograma) {
-    const f = programas.find((p) => p.codigo === selPrograma);
-    chips.push({ key: "programas", label: "Programa", value: f ? f.codigo! : selPrograma });
+  if (selClasif) {
+    const f = genericas.find((g) => g.codigo === selClasif);
+    chips.push({ key: "clasificadores", label: "Genérica", value: f ? `${f.codigo} ${f.descripcion}` : selClasif });
   }
   if (mesDesde !== "1" || mesHasta !== "12") {
     chips.push({
@@ -64,9 +84,6 @@ export function SicopFilterBar({
   if (inclRestringido === "false") {
     chips.push({ key: "incluirRestringido", label: "Restringidos", value: "Excluidos" });
   }
-  if (currentQ) {
-    chips.push({ key: "q", label: "Búsqueda", value: `"${currentQ}"` });
-  }
 
   const removeChip = (key: string) => {
     if (key === "_meses") {
@@ -74,19 +91,39 @@ export function SicopFilterBar({
       params.delete("mesDesde"); params.delete("mesHasta");
       startTransition(() => router.push(`${pathname}?${params.toString()}`));
     } else {
-      if (key === "q") setQ("");
+      if (key === "cui") { clearTimeout(cuiDebounce.current); setCuiInput(""); }
+      if (key === "metas") { setMetaLabel(""); push({ metas: "" }); return; }
       push({ [key]: "" });
     }
   };
 
-  const clearAll = () => { setQ(""); startTransition(() => router.push(pathname)); };
+  const clearAll = () => {
+    clearTimeout(cuiDebounce.current);
+    setCuiInput("");
+    setMetaLabel("");
+    startTransition(() => router.push(pathname));
+  };
+
+  const handleMetaChange = (id: string, label: string, cui: string) => {
+    setMetaLabel(label);
+    clearTimeout(cuiDebounce.current);
+    if (id) {
+      /* Si la meta es PROYECTO muestra su CUI en el campo pero NO lo aplica como filtro URL:
+         el filtro ya está cubierto por metas=ID (más preciso y compatible con el filtro de unidad). */
+      setCuiInput(cui);
+      push({ metas: id });
+    } else {
+      setCuiInput("");
+      push({ metas: "", cui: "" });
+    }
+  };
 
   return (
     <div style={{
-      marginBottom: 16, borderRadius: 8,
+      marginBottom: 16,
+      borderRadius: 8,
       border: "1px solid var(--border)",
       background: "var(--panel)",
-      /* sin overflow:hidden — necesario para que el dropdown de unidades no quede cortado */
     }}>
 
       {/* ── cabecera ── */}
@@ -116,8 +153,67 @@ export function SicopFilterBar({
       </div>
 
       {/* ── controles ── */}
-      <div style={{ padding: "12px 14px", display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))" }}>
+      <div style={{ padding: "12px 14px", display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit,minmax(175px,1fr))" }}>
 
+        {/* 1. Unidad orgánica */}
+        <div style={{ display: "grid", gap: 5 }}>
+          <FieldLabel>Unidad orgánica</FieldLabel>
+          <UnidadCombobox
+            options={unidades}
+            value={selUnidad}
+            onChange={(v) => { setMetaLabel(""); push({ unidades: v, metas: "" }); }}
+          />
+        </div>
+
+        {/* 2. Meta (SF) */}
+        <div style={{ display: "grid", gap: 5 }}>
+          <FieldLabel>Meta / SF</FieldLabel>
+          <MetaCombobox
+            value={selMeta}
+            unidadId={selUnidad}
+            selectedLabel={metaLabel}
+            onChange={handleMetaChange}
+          />
+        </div>
+
+        {/* 3. CUI del proyecto */}
+        <Field label="CUI del proyecto">
+          <div style={{ position: "relative" }}>
+            <input
+              value={cuiInput}
+              onChange={(e) => {
+                const v = e.target.value;
+                setCuiInput(v);
+                clearTimeout(cuiDebounce.current);
+                cuiDebounce.current = setTimeout(() => push({ cui: v.trim() }), 550);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  clearTimeout(cuiDebounce.current);
+                  push({ cui: cuiInput.trim() });
+                }
+              }}
+              placeholder="Ej: 2001621"
+              className="sicop-input"
+              style={{
+                width: "100%",
+                paddingRight: currentCui ? 26 : undefined,
+                background: currentCui ? "var(--accent-soft)" : undefined,
+                borderColor: currentCui ? "rgba(91,141,239,0.4)" : undefined,
+              }}
+              maxLength={12}
+            />
+            {currentCui && (
+              <button
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); clearTimeout(cuiDebounce.current); setCuiInput(""); push({ cui: "" }); }}
+                style={clearBtnStyle}
+              >×</button>
+            )}
+          </div>
+        </Field>
+
+        {/* 4. Rubro */}
         <Field label="Rubro">
           <select value={selRubro} onChange={(e) => push({ rubros: e.target.value })} className="sicop-input">
             <option value="">Todos los rubros</option>
@@ -127,27 +223,17 @@ export function SicopFilterBar({
           </select>
         </Field>
 
-        {/* combobox con búsqueda */}
-        <div style={{ display: "grid", gap: 5 }}>
-          <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-muted)" }}>
-            Unidad orgánica
-          </span>
-          <UnidadCombobox
-            options={unidades}
-            value={selUnidad}
-            onChange={(v) => push({ unidades: v })}
-          />
-        </div>
-
-        <Field label="Programa presupuestal">
-          <select value={selPrograma} onChange={(e) => push({ programas: e.target.value })} className="sicop-input">
-            <option value="">Todos los programas</option>
-            {programas.map((p) => (
-              <option key={p.codigo} value={p.codigo}>{p.codigo} — {p.nombre}</option>
+        {/* 5. Genérica del clasificador */}
+        <Field label="Genérica del clasificador">
+          <select value={selClasif} onChange={(e) => push({ clasificadores: e.target.value })} className="sicop-input">
+            <option value="">Todas las genéricas</option>
+            {genericas.map((g) => (
+              <option key={g.codigo} value={g.codigo}>{g.codigo} — {g.descripcion}</option>
             ))}
           </select>
         </Field>
 
+        {/* 7. Rango de meses */}
         <Field label="Rango de meses">
           <div style={{ display: "grid", gridTemplateColumns: "1fr 14px 1fr", gap: 4, alignItems: "center" }}>
             <select value={mesDesde} onChange={(e) => push({ mesDesde: e.target.value })} className="sicop-input" style={{ paddingRight: 4 }}>
@@ -160,7 +246,8 @@ export function SicopFilterBar({
           </div>
         </Field>
 
-        <Field label="Restringidos">
+        {/* 8. Restringidos */}
+        <Field label="Clasificadores restringidos">
           <button
             type="button"
             onClick={() => push({ incluirRestringido: inclRestringido === "false" ? "true" : "false" })}
@@ -179,29 +266,6 @@ export function SicopFilterBar({
           </button>
         </Field>
 
-        <Field label="Búsqueda libre">
-          <div style={{ display: "flex", gap: 6 }}>
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && push({ q: q.trim() })}
-              placeholder="Finalidad, meta, clasificador..."
-              className="sicop-input"
-              style={{ flex: 1 }}
-            />
-            <button
-              type="button"
-              onClick={() => push({ q: q.trim() })}
-              style={{
-                height: 34, padding: "0 12px", borderRadius: 4, fontSize: 12, fontWeight: 600,
-                background: "var(--accent)", border: "1px solid var(--accent)",
-                color: "#fff", cursor: "pointer", flexShrink: 0,
-              }}
-            >
-              Buscar
-            </button>
-          </div>
-        </Field>
       </div>
 
       {/* ── chips activos ── */}
@@ -220,7 +284,7 @@ export function SicopFilterBar({
               }}
             >
               <span style={{ color: "var(--fg-dim)", fontSize: 10, fontWeight: 500 }}>{chip.label}:</span>
-              <span style={{ fontWeight: 500, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chip.value}</span>
+              <span style={{ fontWeight: 500, maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{chip.value}</span>
               <span style={{ opacity: 0.5, fontSize: 14, lineHeight: 1, marginLeft: 1 }}>×</span>
             </button>
           ))}
@@ -251,17 +315,16 @@ function UnidadCombobox({
   value,
   onChange,
 }: {
-  options: Option[];
+  options: UnidadOption[];
   value: string;
   onChange: (v: string) => void;
 }) {
-  const [text, setText]   = useState("");
-  const [open, setOpen]   = useState(false);
-  const ref               = useRef<HTMLDivElement>(null);
+  const [text, setText] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref             = useRef<HTMLDivElement>(null);
 
   const selected = options.find((o) => String(o.id) === value);
 
-  /* cierra al hacer click fuera */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -277,13 +340,7 @@ function UnidadCombobox({
     ? options.filter((o) => o.nombre.toLowerCase().includes(text.toLowerCase()))
     : options;
 
-  const pick = (id: string) => {
-    onChange(id);
-    setOpen(false);
-    setText("");
-  };
-
-  /* texto mostrado en el input: nombre seleccionado cuando está cerrado, texto de búsqueda cuando abierto */
+  const pick = (id: string) => { onChange(id); setOpen(false); setText(""); };
   const inputValue = open ? text : (selected?.nombre ?? "");
 
   return (
@@ -300,85 +357,255 @@ function UnidadCombobox({
           spellCheck={false}
         />
         {value ? (
-          /* botón × para borrar selección */
           <button
             type="button"
             onMouseDown={(e) => { e.preventDefault(); pick(""); }}
             aria-label="Quitar selección"
-            style={{
-              position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
-              width: 18, height: 18, borderRadius: "50%",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: "var(--border-strong)", border: "none",
-              color: "var(--fg-muted)", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1,
-            }}
+            style={clearBtnStyle}
           >×</button>
         ) : (
-          <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--fg-dim)", fontSize: 9 }}>▾</span>
+          <span style={chevronStyle}>▾</span>
         )}
       </div>
-
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 3px)", left: 0, right: 0, zIndex: 200,
-          background: "var(--bg-elev)", border: "1px solid var(--border-strong)",
-          borderRadius: 6, maxHeight: 240, overflowY: "auto",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
-        }}>
-          {/* opción "todas" */}
-          <button
-            type="button"
-            onMouseDown={(e) => { e.preventDefault(); pick(""); }}
-            style={rowStyle(!value, 1, false)}
-          >
+        <Dropdown>
+          <DropRow active={!value} nivel={1} indent={false} onMouseDown={(e) => { e.preventDefault(); pick(""); }}>
             Todas las unidades
-          </button>
-
+          </DropRow>
           {filtered.length === 0 ? (
-            <div style={{ padding: "10px 12px", color: "var(--fg-dim)", fontSize: 12 }}>
-              Sin resultados para "{text}"
-            </div>
+            <div style={emptyStyle}>Sin resultados para &ldquo;{text}&rdquo;</div>
           ) : (
             filtered.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); pick(String(o.id!)); }}
-                style={rowStyle(String(o.id) === value, o.nivel ?? 1, true)}
-              >
+              <DropRow key={o.id} active={String(o.id) === value} nivel={o.nivel ?? 1} indent onMouseDown={(e) => { e.preventDefault(); pick(String(o.id)); }}>
                 {o.nombre}
-              </button>
+              </DropRow>
             ))
           )}
-        </div>
+        </Dropdown>
       )}
     </div>
   );
 }
 
-function rowStyle(active: boolean, nivel: number, indent: boolean) {
-  return {
-    display: "block" as const,
-    width: "100%",
-    textAlign: "left" as const,
-    padding: `7px 12px 7px ${indent ? 10 + Math.max(0, nivel - 1) * 14 : 12}px`,
-    background: active ? "var(--accent-soft)" : "transparent",
-    border: "none",
-    borderBottom: "1px solid var(--border)",
-    color: active ? "var(--accent-strong)" : nivel > 1 ? "var(--fg-muted)" : "var(--fg)",
-    fontSize: 12,
-    cursor: "pointer" as const,
-    lineHeight: 1.45,
+/* ─────────────────────────────────────────────
+   Combobox async para Meta (SF)
+   ───────────────────────────────────────────── */
+function MetaCombobox({
+  value,
+  unidadId,
+  selectedLabel,
+  onChange,
+}: {
+  value: string;
+  unidadId: string;
+  selectedLabel: string;
+  onChange: (id: string, label: string, cui: string) => void;
+}) {
+  const [text, setText]       = useState("");
+  const [open, setOpen]       = useState(false);
+  const [options, setOptions] = useState<MetaOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const ref                   = useRef<HTMLDivElement>(null);
+  const debounce              = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setText("");
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    clearTimeout(debounce.current);
+    debounce.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ limit: "80" });
+        if (unidadId) params.set("unidadId", unidadId);
+        if (text.trim()) params.set("q", text.trim());
+        const res  = await fetch(`/api/catalogos/metas?${params}`);
+        const json = await res.json();
+        setOptions(json.data ?? []);
+      } finally {
+        setLoading(false);
+      }
+    }, text ? 280 : 0);
+  }, [open, text, unidadId]);
+
+  const metaDisplayLabel = (m: MetaOption) => {
+    const nombre = m.nombreCorto ?? m.productoProyectoNombre.slice(0, 55);
+    return `SF ${m.secFunc} — ${nombre}`;
   };
+
+  const pick = (id: string, label: string, cui = "") => {
+    onChange(id, label, cui);
+    setOpen(false);
+    setText("");
+  };
+
+  const inputValue = open ? text : (value ? (selectedLabel || `Meta #${value}`) : "");
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <div style={{ position: "relative" }}>
+        <input
+          value={inputValue}
+          onChange={(e) => { setText(e.target.value); setOpen(true); }}
+          onFocus={() => { setText(""); setOpen(true); }}
+          placeholder={unidadId ? "Buscar meta de esta unidad..." : "Buscar meta (SF)..."}
+          className="sicop-input"
+          style={{ paddingRight: 26 }}
+          autoComplete="off"
+          spellCheck={false}
+        />
+        {value ? (
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); pick("", "", ""); }} aria-label="Quitar selección" style={clearBtnStyle}>×</button>
+        ) : (
+          <span style={chevronStyle}>▾</span>
+        )}
+      </div>
+      {open && (
+        <Dropdown>
+          <DropRow active={!value} nivel={1} indent={false} onMouseDown={(e) => { e.preventDefault(); pick("", "", ""); }}>
+            Todas las metas
+          </DropRow>
+          {loading ? (
+            <div style={{ ...emptyStyle, display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", border: "1.5px solid var(--accent)", borderTopColor: "transparent", animation: "sicop-spin 0.7s linear infinite" }} />
+              Buscando…
+            </div>
+          ) : options.length === 0 ? (
+            <div style={emptyStyle}>{text ? `Sin resultados para "${text}"` : "Sin metas disponibles"}</div>
+          ) : (
+            options.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const cuiVal = m.cui ?? (m.tipoProdProy === "PROYECTO" ? m.productoProyectoCodigo : "");
+                  pick(String(m.id), metaDisplayLabel(m), cuiVal);
+                }}
+                style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "8px 12px",
+                  background: String(m.id) === value ? "var(--accent-soft)" : "transparent",
+                  border: "none",
+                  borderBottom: "1px solid var(--border)",
+                  cursor: "pointer",
+                  lineHeight: 1.45,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4,
+                    background: m.tipoProdProy === "PROYECTO" ? "rgba(91,141,239,0.15)" : "rgba(46,194,126,0.15)",
+                    color: m.tipoProdProy === "PROYECTO" ? "var(--accent-strong)" : "var(--ok)",
+                    flexShrink: 0,
+                  }}>
+                    {m.tipoProdProy === "PROYECTO" ? "PROY" : "PROD"}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: String(m.id) === value ? "var(--accent-strong)" : "var(--fg)" }}>
+                    SF {m.secFunc}
+                  </span>
+                  {(m.cui ?? (m.tipoProdProy === "PROYECTO" ? m.productoProyectoCodigo : null)) && (
+                    <span style={{ fontSize: 10, color: "var(--fg-dim)" }}>
+                      CUI: {m.cui ?? m.productoProyectoCodigo}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--fg-muted)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {m.nombreCorto ?? m.productoProyectoNombre.slice(0, 70)}
+                </div>
+              </button>
+            ))
+          )}
+        </Dropdown>
+      )}
+    </div>
+  );
+}
+
+/* ── helpers de UI ── */
+
+function Dropdown({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      position: "absolute", top: "calc(100% + 3px)", left: 0, right: 0, zIndex: 200,
+      background: "var(--bg-elev)", border: "1px solid var(--border-strong)",
+      borderRadius: 6, maxHeight: 280, overflowY: "auto",
+      boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function DropRow({
+  active, nivel, indent, onMouseDown, children,
+}: {
+  active: boolean;
+  nivel: number;
+  indent: boolean;
+  onMouseDown: React.MouseEventHandler<HTMLButtonElement>;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onMouseDown={onMouseDown}
+      style={{
+        display: "block", width: "100%", textAlign: "left",
+        padding: `7px 12px 7px ${indent ? 10 + Math.max(0, nivel - 1) * 14 : 12}px`,
+        background: active ? "var(--accent-soft)" : "transparent",
+        border: "none",
+        borderBottom: "1px solid var(--border)",
+        color: active ? "var(--accent-strong)" : nivel > 1 ? "var(--fg-muted)" : "var(--fg)",
+        fontSize: 12,
+        cursor: "pointer",
+        lineHeight: 1.45,
+      }}
+    >
+      {children}
+    </button>
+  );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label style={{ display: "grid", gap: 5 }}>
-      <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-muted)" }}>
-        {label}
-      </span>
+      <FieldLabel>{label}</FieldLabel>
       {children}
     </label>
   );
 }
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-muted)" }}>
+      {children}
+    </span>
+  );
+}
+
+const clearBtnStyle: React.CSSProperties = {
+  position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+  width: 18, height: 18, borderRadius: "50%",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  background: "var(--border-strong)", border: "none",
+  color: "var(--fg-muted)", cursor: "pointer", fontSize: 13, padding: 0, lineHeight: 1,
+};
+
+const chevronStyle: React.CSSProperties = {
+  position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+  pointerEvents: "none", color: "var(--fg-dim)", fontSize: 9,
+};
+
+const emptyStyle: React.CSSProperties = {
+  padding: "10px 12px", color: "var(--fg-dim)", fontSize: 12,
+};

@@ -26,14 +26,18 @@ export function getGroupBy(params: SearchParamsInput) {
 }
 
 export async function getCatalogosBasicos() {
-  const [rubros, unidades, programas] = await Promise.all([
+  const [rubros, unidades, genericas] = await Promise.all([
     prisma.dimRubro.findMany({ orderBy: { codigo: "asc" } }),
     prisma.dimUnidadOrganica.findMany({
       orderBy: [{ nivel: "asc" }, { rutaNombres: "asc" }],
       select: { id: true, nivel: true, nombre: true, rutaNombres: true },
     }),
-    prisma.dimProgramaPptal.findMany({ orderBy: { codigo: "asc" } }),
+    prisma.dimClasificadorGasto.findMany({
+      where: { nivel: 2 },
+      orderBy: { codigo: "asc" },
+      select: { codigo: true, descripcion: true },
+    }),
   ]);
 
-  return { rubros, unidades, programas };
+  return { rubros, unidades, genericas };
 }
