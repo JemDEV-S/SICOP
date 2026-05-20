@@ -55,6 +55,7 @@ export async function getKpis(filtros: Filtros) {
       girado,
       pagado: toNumber(mensual._sum.mtoPagado),
       saldoPorCertificar: round2(pim - certificado),
+      saldoDisponible: round2(pim - compromisoAnual),
       avanceCertificado: pim ? round2((certificado / pim) * 100) : 0,
       avanceCompromisoAnual: pim ? round2((compromisoAnual / pim) * 100) : 0,
       avanceDevengado: pim ? round2((devengado / pim) * 100) : 0,

@@ -1,17 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { ThemeToggle } from "./ThemeToggle";
-
-type UnidadOrganica = {
-  id: number;
-  nivel: number;
-  nombre: string;
-  padreId: number | null;
-};
-
-type UnidadNode = UnidadOrganica & {
-  hijos: UnidadNode[];
-};
+import { SicopSidebarTree } from "./SicopSidebarTree";
 
 const nav = [
   { href: "/", label: "Dashboard" },
@@ -24,11 +14,10 @@ export async function SicopShell({ children }: { children: React.ReactNode }) {
   const [carga, unidades] = await Promise.all([
     prisma.carga.findFirst({ where: { esVigente: true, estado: "EXITOSA" }, orderBy: { procesadoEn: "desc" } }),
     prisma.dimUnidadOrganica.findMany({
-      orderBy: [{ rutaNombres: "asc" }],
+      orderBy: [{ nivel: "asc" }, { rutaNombres: "asc" }],
       select: { id: true, nivel: true, nombre: true, padreId: true },
     }),
   ]);
-  const unidadesTree = buildUnidadTree(unidades);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--fg)" }}>
@@ -112,18 +101,7 @@ export async function SicopShell({ children }: { children: React.ReactNode }) {
           <div style={{ fontSize: 12, color: "var(--fg-muted)", marginBottom: 20 }}>Cusco · EF {carga?.anoEje ?? 2026}</div>
 
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-muted)", marginBottom: 8 }}>Estructura institucional</div>
-          <div style={{ display: "grid", gap: 1, fontSize: 12 }}>
-            <Link href="/" style={{
-              borderRadius: 4, padding: "6px 8px", fontWeight: 600,
-              background: "var(--accent-soft)", color: "var(--accent)",
-              textDecoration: "none",
-            }}>
-              Todos los organos
-            </Link>
-            {unidadesTree.map((unidad) => (
-              <UnidadTreeItem key={unidad.id} unidad={unidad} />
-            ))}
-          </div>
+          <SicopSidebarTree unidades={unidades} />
 
           <div style={{ height: 1, background: "var(--border)", margin: "16px 0" }} />
           <div style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--fg-muted)" }}>Ultima actualizacion</div>
@@ -147,51 +125,6 @@ export async function SicopShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function buildUnidadTree(unidades: UnidadOrganica[]) {
-  const byId = new Map<number, UnidadNode>();
-  const roots: UnidadNode[] = [];
-
-  unidades.forEach((unidad) => {
-    byId.set(unidad.id, { ...unidad, hijos: [] });
-  });
-
-  unidades.forEach((unidad) => {
-    const node = byId.get(unidad.id);
-    if (!node) return;
-
-    if (unidad.padreId && byId.has(unidad.padreId)) {
-      byId.get(unidad.padreId)?.hijos.push(node);
-    } else {
-      roots.push(node);
-    }
-  });
-
-  return roots;
-}
-
-function UnidadTreeItem({ unidad }: { unidad: UnidadNode }) {
-  return (
-    <div>
-      <Link
-        href={`/?unidades=${unidad.id}`}
-        style={{
-          display: "block",
-          borderRadius: 4,
-          padding: "6px 8px",
-          paddingLeft: 8 + Math.max(0, unidad.nivel - 1) * 14,
-          color: "var(--fg-muted)",
-          textDecoration: "none",
-        }}
-        className="sicop-tree-item"
-      >
-        {unidad.nombre}
-      </Link>
-      {unidad.hijos.map((hijo) => (
-        <UnidadTreeItem key={hijo.id} unidad={hijo} />
-      ))}
-    </div>
-  );
-}
 
 export function Section({
   title, sub, children, tools,

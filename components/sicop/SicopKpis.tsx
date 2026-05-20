@@ -12,6 +12,12 @@ export function SicopKpis({ data }: { data: KpiResponse }) {
     { label: "Devengado", value: k.devengado, pct: k.avanceDevengado, strong: true },
     { label: "Girado", value: k.girado, pct: k.avanceGirado },
     { label: "Pagado", value: k.pagado },
+    {
+      label: "Saldo disponible",
+      value: k.saldoDisponible,
+      foot: "PIM − Compromiso anual",
+      accent: k.saldoDisponible >= 0 ? "var(--ok)" : "var(--danger)",
+    },
   ];
 
   return (

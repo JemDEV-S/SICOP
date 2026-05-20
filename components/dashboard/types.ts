@@ -20,6 +20,7 @@ export type KpiResponse = {
     girado: number;
     pagado: number;
     saldoPorCertificar: number;
+    saldoDisponible: number;
     avanceCertificado: number;
     avanceCompromisoAnual: number;
     avanceDevengado: number;
