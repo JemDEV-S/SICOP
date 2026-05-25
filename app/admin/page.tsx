@@ -7,14 +7,15 @@ export const dynamic = "force-dynamic";
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ upload?: string; restore?: string; message?: string; user?: string }>;
+  searchParams?: Promise<{ upload?: string; restore?: string; report?: string; message?: string; user?: string }>;
 }) {
   const user = await requireAdmin();
   const params = (await searchParams) ?? {};
-  const [cargas, usuarios, auditoria] = await Promise.all([
+  const [cargas, usuarios, auditoria, reportes] = await Promise.all([
     prisma.carga.findMany({ orderBy: { creadoEn: "desc" }, take: 20 }),
     prisma.usuario.findMany({ orderBy: { creadoEn: "desc" }, select: { id: true, username: true, email: true, rol: true, activo: true } }),
     prisma.auditoria.findMany({ orderBy: { creadoEn: "desc" }, take: 12, include: { usuario: { select: { username: true } } } }),
+    prisma.reporteDocumento.findMany({ orderBy: { creadoEn: "desc" }, take: 12, include: { usuario: { select: { nombreCompleto: true } } } }),
   ]);
 
   const vigente = cargas.find((carga) => carga.esVigente);
@@ -39,6 +40,10 @@ export default async function AdminPage({
         {params.restore === "ok" ? <Notice tone="ok">Carga restaurada como vigente.</Notice> : null}
         {params.user === "created" ? <Notice tone="ok">Usuario creado.</Notice> : null}
         {params.user === "updated" ? <Notice tone="ok">Usuario actualizado.</Notice> : null}
+        {params.report === "ok" ? <Notice tone="ok">Reporte PDF publicado.</Notice> : null}
+        {params.report === "deleted" ? <Notice tone="ok">Reporte retirado de la vista publica.</Notice> : null}
+        {params.report === "invalid" ? <Notice tone="warn">Completa el titulo y sube un archivo PDF valido.</Notice> : null}
+        {params.report === "large" ? <Notice tone="warn">El PDF supera el limite de 20 MB.</Notice> : null}
 
         <div className="admin-hero-grid">
           <AdminMetric
@@ -134,6 +139,62 @@ export default async function AdminPage({
           </Panel>
         </div>
 
+        <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <Panel title="Publicar reporte PDF">
+            <form action="/api/admin/reportes" method="post" encType="multipart/form-data" className="admin-upload reports-admin-upload">
+              <div>
+                <div className="text-base font-semibold">Nuevo documento publico</div>
+                <p className="mt-2 max-w-xl text-sm text-[#8a93a6]">
+                  El archivo aparecera en la pestana Reportes para consulta publica. Usa titulos claros y descriptivos.
+                </p>
+              </div>
+              <input name="titulo" placeholder="Titulo del reporte" className="sicop-input" maxLength={180} required />
+              <textarea name="descripcion" placeholder="Descripcion breve" className="sicop-input admin-textarea" rows={3} />
+              <label className="admin-file-drop">
+                <span>Seleccionar archivo PDF</span>
+                <input name="file" type="file" accept="application/pdf,.pdf" required />
+              </label>
+              <button className="admin-primary-button">Publicar PDF</button>
+            </form>
+          </Panel>
+
+          <Panel title="Reportes publicados">
+            <div className="overflow-x-auto">
+              <table className="sicop-table">
+                <thead><tr><th>Documento</th><th>Fecha</th><th>Estado</th><th className="sicop-num">Tamano</th><th>Accion</th></tr></thead>
+                <tbody>
+                  {reportes.map((reporte) => (
+                    <tr key={reporte.id}>
+                      <td className="sicop-cell-text">
+                        <div className="font-medium">{reporte.titulo}</div>
+                        <div className="mt-1 text-xs text-[#8a93a6]">{reporte.nombreArchivo}</div>
+                      </td>
+                      <td>{formatDateTime(reporte.creadoEn)}</td>
+                      <td><span className={`admin-status ${reporte.publicado ? "is-ok" : "is-muted"}`}>{reporte.publicado ? "Publicado" : "Retirado"}</span></td>
+                      <td className="sicop-num">{formatBytes(reporte.tamanoBytes)}</td>
+                      <td>
+                        {reporte.publicado ? (
+                          <div className="flex items-center gap-2">
+                            <a className="rounded border border-[#2b3340] px-2 py-1 text-xs" href={reporte.rutaPublica} target="_blank" rel="noreferrer">Abrir</a>
+                            <form action={`/api/admin/reportes/${reporte.id}`} method="post">
+                              <button className="rounded border border-[#2b3340] px-2 py-1 text-xs">Retirar</button>
+                            </form>
+                          </div>
+                        ) : "Retirado"}
+                      </td>
+                    </tr>
+                  ))}
+                  {!reportes.length ? (
+                    <tr>
+                      <td colSpan={5} className="sicop-cell-text">Todavia no hay reportes registrados.</td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </div>
+
         <div className="mt-4 grid gap-4 xl:grid-cols-[1.35fr_1fr]">
           <Panel title="Historial de cargas">
             <div className="overflow-x-auto">
@@ -223,6 +284,11 @@ function formatDateTime(value: Date) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(value);
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / 1024 / 1024).toLocaleString("es-PE", { maximumFractionDigits: 1 })} MB`;
 }
 
 function humanizeAction(action: string) {

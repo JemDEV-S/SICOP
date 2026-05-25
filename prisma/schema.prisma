@@ -36,6 +36,8 @@ enum AccionAuditoria {
   CARGA_CREADA
   CARGA_RESTAURADA
   CARGA_ELIMINADA
+  REPORTE_CREADO
+  REPORTE_ELIMINADO
   USUARIO_CREADO
   USUARIO_ACTUALIZADO
   USUARIO_DESACTIVADO
@@ -150,9 +152,29 @@ model Usuario {
   creadoEn       DateTime     @default(now()) @map("creado_en")
   actualizadoEn  DateTime     @updatedAt @map("actualizado_en")
   cargas         Carga[]
+  reportes       ReporteDocumento[]
   auditorias     Auditoria[]
 
   @@map("usuarios")
+}
+
+model ReporteDocumento {
+  id             Int       @id @default(autoincrement())
+  titulo         String    @db.VarChar(180)
+  descripcion    String?   @db.Text
+  nombreArchivo  String    @map("nombre_archivo") @db.VarChar(255)
+  rutaPublica    String    @map("ruta_publica") @db.VarChar(500)
+  mimeType       String    @map("mime_type") @db.VarChar(80)
+  tamanoBytes    Int       @map("tamano_bytes")
+  publicado      Boolean   @default(true)
+  usuarioId      Int?      @map("usuario_id")
+  creadoEn       DateTime  @default(now()) @map("creado_en")
+  actualizadoEn  DateTime  @updatedAt @map("actualizado_en")
+  usuario        Usuario?  @relation(fields: [usuarioId], references: [id])
+
+  @@index([publicado, creadoEn], map: "idx_reporte_publicado_fecha")
+  @@index([usuarioId], map: "idx_reporte_usuario")
+  @@map("reportes_documentos")
 }
 
 model Carga {

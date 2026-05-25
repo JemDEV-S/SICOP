@@ -7,6 +7,7 @@ const nav = [
   { href: "/reporte-principal", label: "Reporte principal" },
   { href: "/mensual", label: "Ejecucion mensual" },
   { href: "/inversiones", label: "Inversiones" },
+  { href: "/reportes", label: "Reportes" },
 ];
 
 export function SicopShellFrame({ children }: { children: React.ReactNode }) {

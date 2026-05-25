@@ -98,6 +98,12 @@ a { color: inherit; text-decoration: none; }
   font-family: var(--font-sans);
 }
 .sicop-input:focus { border-color: var(--accent); }
+.admin-textarea {
+  min-height: 84px;
+  height: auto;
+  padding-top: 9px;
+  resize: vertical;
+}
 
 /* ====================== TABLE ====================== */
 .sicop-table {
@@ -273,9 +279,171 @@ a { color: inherit; text-decoration: none; }
   background: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
+
+/* ====================== REPORTES ====================== */
+.reports-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(91,141,239,0.16), transparent 42%),
+    linear-gradient(180deg, var(--bg-elev-2), var(--panel));
+  padding: 16px;
+}
+.reports-showcase-main {
+  display: grid;
+  gap: 8px;
+  align-content: center;
+}
+.reports-kicker {
+  width: fit-content;
+  border: 1px solid rgba(91,141,239,0.34);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.reports-showcase p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--fg-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.reports-stat {
+  display: grid;
+  align-content: center;
+  min-height: 86px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.02);
+  padding: 14px;
+}
+.reports-stat span {
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 700;
+}
+.reports-stat small {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 12px;
+}
+.report-card {
+  display: grid;
+  min-height: 240px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), transparent),
+    var(--bg-elev-2);
+  padding: 14px;
+}
+.report-card:hover {
+  border-color: var(--border-strong);
+  background:
+    linear-gradient(180deg, rgba(91,141,239,0.08), transparent),
+    var(--bg-elev-2);
+}
+.report-card-topline,
+.report-card-meta,
+.report-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.report-card-topline,
+.report-card-meta {
+  color: var(--fg-muted);
+  font-size: 11px;
+}
+.report-file-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 30px;
+  border-radius: 5px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.report-card h2 {
+  margin: 18px 0 0;
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+.report-card p {
+  margin: 10px 0 18px;
+  color: var(--fg-muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.report-card-footer {
+  align-self: end;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.report-card-footer a {
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  padding: 7px 10px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+}
+.reports-empty {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 260px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  color: var(--fg-muted);
+  text-align: center;
+}
+.reports-empty h2 {
+  margin: 0;
+  color: var(--fg);
+  font-size: 16px;
+}
+.reports-empty p {
+  max-width: 360px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
 @media (min-width: 640px) {
   .admin-hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reports-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 1280px) {
   .admin-hero-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .reports-showcase { grid-template-columns: minmax(0, 1fr) 160px 160px; }
+  .reports-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
