@@ -6,5 +6,9 @@ dist
 *.log
 coverage
 .vercel
+uploads/*
+!uploads/reportes/
+uploads/reportes/*
+!uploads/reportes/.gitkeep
 public/uploads
 .next

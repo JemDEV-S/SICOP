@@ -175,7 +175,7 @@ export default async function AdminPage({
                       <td>
                         {reporte.publicado ? (
                           <div className="flex items-center gap-2">
-                            <a className="rounded border border-[#2b3340] px-2 py-1 text-xs" href={reporte.rutaPublica} target="_blank" rel="noreferrer">Abrir</a>
+                            <a className="rounded border border-[#2b3340] px-2 py-1 text-xs" href={reporteHref(reporte.rutaPublica)} target="_blank" rel="noreferrer">Abrir</a>
                             <form action={`/api/admin/reportes/${reporte.id}`} method="post">
                               <button className="rounded border border-[#2b3340] px-2 py-1 text-xs">Retirar</button>
                             </form>
@@ -289,6 +289,12 @@ function formatDateTime(value: Date) {
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / 1024 / 1024).toLocaleString("es-PE", { maximumFractionDigits: 1 })} MB`;
+}
+
+function reporteHref(rutaPublica: string) {
+  if (rutaPublica.startsWith("/api/reportes/")) return rutaPublica;
+  const filename = rutaPublica.split("/").filter(Boolean).at(-1);
+  return filename ? `/api/reportes/${filename}` : rutaPublica;
 }
 
 function humanizeAction(action: string) {

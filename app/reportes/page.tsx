@@ -53,7 +53,7 @@ export default async function ReportesPage() {
                     </div>
                     <div className="report-card-footer">
                       <span>#{String(index + 1).padStart(2, "0")}</span>
-                      <a href={reporte.rutaPublica} target="_blank" rel="noreferrer">
+                      <a href={reporteHref(reporte.rutaPublica)} target="_blank" rel="noreferrer">
                         Abrir PDF
                       </a>
                     </div>
@@ -85,4 +85,10 @@ function formatDate(value: Date) {
 function formatBytes(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / 1024 / 1024).toLocaleString("es-PE", { maximumFractionDigits: 1 })} MB`;
+}
+
+function reporteHref(rutaPublica: string) {
+  if (rutaPublica.startsWith("/api/reportes/")) return rutaPublica;
+  const filename = rutaPublica.split("/").filter(Boolean).at(-1);
+  return filename ? `/api/reportes/${filename}` : rutaPublica;
 }
