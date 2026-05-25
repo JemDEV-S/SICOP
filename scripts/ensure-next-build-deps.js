@@ -6,6 +6,7 @@ const requiredPackages = [
   "@types/node",
   "@types/react",
   "@types/react-dom",
+  "@types/bcryptjs",
 ];
 
 const missingPackages = requiredPackages.filter((pkg) => {
